@@ -1,0 +1,30 @@
+# Multiple iterations for benchmarking
+for server in 1.1.1.1 8.8.8.8 9.9.9.9 100.100.100.100; do
+    echo "Testing $server"
+    for i in {1..10}; do dig +stats google.com @$server | grep "Query time"; done
+    echo
+done
+
+
+
+  ########################################################################
+  ###  Test Multiple Domains #############################################
+
+  
+#!/bin/bash
+  
+servers=("1.1.1.1" "8.8.8.8" "9.9.9.9" "100.100.100.100")
+domains=("google.com" "michaelwoodcock.duckdns.org")
+iterations=10
+
+for server in "${servers[@]}"; do
+    echo "===== Testing DNS server: $server ====="
+    for domain in "${domains[@]}"; do
+        echo "-- Domain: $domain --"
+        for i in $(seq 1 $iterations); do
+            dig +time=2 +tries=1 +stats "$domain" @"$server" | grep "Query time"
+        done
+        echo
+    done
+    echo
+done
