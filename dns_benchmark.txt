@@ -12,19 +12,53 @@ done
 
   
 #!/bin/bash
-  
+
+# DNS servers to test
 servers=("1.1.1.1" "8.8.8.8" "9.9.9.9" "100.100.100.100")
+
+# Domains to test
 domains=("google.com" "michaelwoodcock.duckdns.org")
+
+# Number of iterations per test
 iterations=10
+
+echo "DNS Benchmarking Script"
+echo "Timeout per query: 15 seconds"
+echo
 
 for server in "${servers[@]}"; do
     echo "===== Testing DNS server: $server ====="
     for domain in "${domains[@]}"; do
         echo "-- Domain: $domain --"
+        
+        times=()
+        
         for i in $(seq 1 $iterations); do
-            dig +time=2 +tries=1 +stats "$domain" @"$server" | grep "Query time"
+            # Run dig with 15s timeout and 1 try
+            qtime=$(dig +time=15 +tries=1 +stats "$domain" @"$server" | grep "Query time" | awk '{print $4}')
+            
+            # Fallback if dig fails
+            if [ -z "$qtime" ]; then
+                qtime=15000  # Treat as 15 sec timeout
+            fi
+            
+            times+=($qtime)
+            echo "Query $i: $qtime ms"
         done
+        
+        # Calculate min, max, average
+        sum=0
+        min=${times[0]}
+        max=${times[0]}
+        for t in "${times[@]}"; do
+            ((sum+=t))
+            if ((t < min)); then min=$t; fi
+            if ((t > max)); then max=$t; fi
+        done
+        avg=$((sum / iterations))
+        
+        echo "Summary for $domain on $server:"
+        echo "Average: ${avg} ms | Min: ${min} ms | Max: ${max} ms"
         echo
     done
-    echo
 done
